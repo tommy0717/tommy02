@@ -1,14 +1,19 @@
 package com.appspot.tommy02;
 
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
@@ -134,6 +139,54 @@ public class EntryServlet extends HttpServlet {
 //					pm.close();
 //				}
 //				********************ここまで
+
+
+				/*ログイントークンを生成する */
+				int TOKEN_LENGTH = 16;//16*2=32バイト
+				byte token[] = new byte[TOKEN_LENGTH];
+				StringBuffer buf = new StringBuffer();
+				SecureRandom random = null;
+				try {
+					random = SecureRandom.getInstance("SHA1PRNG");
+					for (int i = 0; i < token.length; i++) {
+						buf.append(String.format("%02x", token[i]));
+					}
+				}catch(NoSuchAlgorithmException e){
+					/* トークン生成エラー */
+				}
+
+				/* 作成したログイントークンをログインテーブルへ登録する */
+				Date date = new Date();
+				try{
+					Entity Login = new Entity("LOGIN",email);
+					Login.setProperty("TOKEN", buf.toString());
+					Login.setProperty("REGISTRATED_TIME", date.toString());
+					ds.put(Login);
+				}catch(Exception e){
+					/* エラー */
+				}
+
+				/* ログイントークンをCookieに格納する */
+				Cookie cookie = new Cookie("TOKEN", buf.toString());
+				cookie.setMaxAge(60*60*24*14); //２週間
+				resp.addCookie(cookie);
+
+				/* ログイントークンをセッションに格納する */
+				//セッション取得
+				HttpSession session = req.getSession(true);
+
+				//既存セッション破棄
+				session.invalidate();
+
+				//新規セッションを開始
+				HttpSession newSession = req.getSession(true);
+
+				//セッションに値を格納
+				newSession.setAttribute("TOKEN", buf.toString());
+
+				//リダイレクト
+//				resp.sendRedirect("/test/welcome.jsp");
+
 
 				/* 登録完了ページを出力する */
 				req.setAttribute("email", email);
