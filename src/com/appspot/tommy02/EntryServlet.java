@@ -148,6 +148,7 @@ public class EntryServlet extends HttpServlet {
 				SecureRandom random = null;
 				try {
 					random = SecureRandom.getInstance("SHA1PRNG");
+					random.nextBytes(token);
 					for (int i = 0; i < token.length; i++) {
 						buf.append(String.format("%02x", token[i]));
 					}
@@ -158,8 +159,9 @@ public class EntryServlet extends HttpServlet {
 				/* 作成したログイントークンをログインテーブルへ登録する */
 				Date date = new Date();
 				try{
-					Entity Login = new Entity("LOGIN",email);
+					Entity Login = new Entity("LOGIN",buf.toString());
 					Login.setProperty("TOKEN", buf.toString());
+					Login.setProperty("USER_ID", email);
 					Login.setProperty("REGISTRATED_TIME", date.toString());
 					ds.put(Login);
 				}catch(Exception e){
@@ -183,6 +185,7 @@ public class EntryServlet extends HttpServlet {
 
 				//セッションに値を格納
 				newSession.setAttribute("TOKEN", buf.toString());
+				newSession.setAttribute("STATUS", "login");
 
 				//リダイレクト
 //				resp.sendRedirect("/test/welcome.jsp");
