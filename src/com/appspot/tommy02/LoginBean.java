@@ -61,7 +61,7 @@ public class LoginBean {
 			    String formatDate = formatA.format(nowCalendar.getTime());
 
 				try{
-					Entity Login = new Entity("LOGIN",buf.toString());
+					Entity Login = new Entity("LOGIN",buf.toString(),key);
 					Login.setProperty("TOKEN", buf.toString());
 					Login.setProperty("USER_ID", userid);
 					Login.setProperty("REGISTRATED_TIME", formatDate);
