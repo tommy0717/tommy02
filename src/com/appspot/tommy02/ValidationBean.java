@@ -40,7 +40,6 @@ public class ValidationBean {
 				/* 登録済チェック */
 				Key key = KeyFactory.createKey("User", email);
 				DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
-		//				String test;
 				try{
 					Entity entity = ds.get(key);
 		//					Object obj = entity.getProperty("email");
@@ -80,7 +79,5 @@ public class ValidationBean {
 		}
 		return result_nickname;
 	}
-
-
 
 }
