@@ -88,6 +88,7 @@ public class EntryServlet extends HttpServlet {
 					User.setProperty("password", password);
 					User.setProperty("name", name);
 					User.setProperty("nickname", nickname);
+					User.setProperty("lastTaskNo", "0");
 					ds.put(User);
 
 				}catch(Exception e){
@@ -105,7 +106,7 @@ public class EntryServlet extends HttpServlet {
 //				}
 //				********************ここまで
 
-				LoginBean login = new LoginBean();
+				AccountBean login = new AccountBean();
 				String result = login.Login(email,password);
 
 				switch(result){

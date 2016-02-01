@@ -43,7 +43,7 @@ public class IndexServlet extends HttpServlet {
 				  }
 
 				//ログイン認証
-				LoginBean login1 = new LoginBean((String)session.getAttribute("STATUS"),
+				AccountBean login1 = new AccountBean((String)session.getAttribute("STATUS"),
 												(String)session.getAttribute("TOKEN"),
 												cok_token);
 				String result = login1.LoginCheck();
@@ -63,7 +63,6 @@ public class IndexServlet extends HttpServlet {
 					HttpSession newSession = req.getSession(true);  //新規セッション開始
 					newSession.setAttribute("TOKEN", cok_token);    //セッションに値を格納
 					newSession.setAttribute("STATUS", "login");     //セッションに値を格納
-
 					RequestDispatcher rd2 = getServletContext().getRequestDispatcher("/WEB-INF/mypage.jsp");
 					rd2.forward(req, resp);
 					break;

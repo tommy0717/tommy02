@@ -23,9 +23,19 @@ import com.google.appengine.api.datastore.Query.FilterOperator;
 
 @SuppressWarnings("serial")
 public class TaskServlet extends HttpServlet {
+
+	//タスク一覧に表示するタスク件数（１ページあたり）
+	int displayNumber = 10;
+
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp)
 	throws ServletException, IOException {
+
+		String strTaskID;
+		Long lngTaskID;
+		int index1;
+		int index2;
+
 
 		String menu = req.getParameter("menu");
 		if(menu == null){
@@ -35,54 +45,109 @@ public class TaskServlet extends HttpServlet {
 		}
 
 		switch(menu){
-		case "entry":
-			//新規入力画面へ遷移
+		case "entry": //タスク登録
+
 			RequestDispatcher rd = getServletContext().getRequestDispatcher("/WEB-INF/task_add.jsp");
 			rd.forward(req, resp);
 			break;
 
-		case "update":
+		case "delete": //タスク削除
+
+			TaskBean task = new TaskBean(lngGetID(req.getParameter("key")));
+			String resultDelete = task.delete();
+
+			if(resultDelete == "OK"){
+				//既存タスクを取得
+				SearchResult sr = taskSearch(req);
+				req.setAttribute("allPages", sr.getAllPages());
+		        req.setAttribute("task", sr.getList());
+		        req.setAttribute("pages", req.getParameter("pages"));
+
+				//画面遷移
+				RequestDispatcher rd1 = getServletContext().getRequestDispatcher("/WEB-INF/task_list.jsp");
+				rd1.forward(req, resp);
+
+			}else{
+				req.setAttribute("errMsg", resultDelete);
+				RequestDispatcher rd1 = getServletContext().getRequestDispatcher("/WEB-INF/task_list.jsp");
+				rd1.forward(req, resp);
+			}
+
+		case "list": //タスクの一覧表示
+
 			//既存タスクを取得
+				SearchResult sr = taskSearch(req);
+				req.setAttribute("allPages", sr.getAllPages());
+		        req.setAttribute("task", sr.getList());
+		        req.setAttribute("pages", req.getParameter("pages"));
 
-			HttpSession ss = req.getSession();
-			Key loginKey = KeyFactory.createKey("LOGIN", (String)ss.getAttribute("TOKEN"));
-			DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
-			try {
-				Entity login = ds.get(loginKey);
-				String userId = (String)login.getProperty("USER_ID");
-
-			// 1.DatastoreServiceクラスのインスタンスを生成
-//	        DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
-
-	        // 2.Queryクラスのインスタンスを生成
-	        // 引き数にカインド名を指定
-	        Query query = new Query("TASK");
-
-	        // 3.QueryクラスのaddFilterメソッドを用いて条件を指定
-	        query.setFilter(new Query.FilterPredicate("user", FilterOperator.EQUAL, userId));
-
-	        // 4.作成したクエリからPrepareQueryクラスのオブジェクトを生成
-	        PreparedQuery pQuery = ds.prepare(query);
-
-	        FetchOptions fetch =FetchOptions.Builder.withOffset(0);
-	        List list = pQuery.asList(fetch);
-
-	        req.setAttribute("task", list);
-
-			//画面遷移
-			RequestDispatcher rd1 = getServletContext().getRequestDispatcher("/WEB-INF/task_mod.jsp");
-			rd1.forward(req, resp);
+				//画面遷移
+				RequestDispatcher rd1 = getServletContext().getRequestDispatcher("/WEB-INF/task_list.jsp");
+				rd1.forward(req, resp);
 
 			break;
-			}catch(EntityNotFoundException e){
 
+		case "result": //実績入力
+
+			strTaskID = strGetID(req.getParameter("key"));
+
+			req.setAttribute("taskID", strTaskID);
+			RequestDispatcher rd2 = getServletContext().getRequestDispatcher("/WEB-INF/task_mod.jsp");
+			rd2.forward(req, resp);
+
+			break;
+
+		case "resultDelete": //実績削除
+
+			Long taskResultID = lngGetID(req.getParameter("taskResultID"));
+
+			TaskResultBean trt = new TaskResultBean(taskResultID);
+			String resultDelete2 = trt.delete();
+
+			if(resultDelete2 == "OK"){
+				menu = "resultList";
+			}else{
+				req.setAttribute("errMsg", resultDelete2);
+				RequestDispatcher rd3 = getServletContext().getRequestDispatcher("/WEB-INF/taskResultList.jsp");
+				rd3.forward(req, resp);
 			}
+
+		case "resultList": //実績一覧
+
+			lngTaskID = lngGetID(req.getParameter("key"));
+	        List list1 = taskSearch(lngTaskID);
+
+	        Key taskKey = KeyFactory.createKey("TASK", lngTaskID);
+	    	DatastoreService ds1 = DatastoreServiceFactory.getDatastoreService();
+	        try {
+				Entity task1 = ds1.get(taskKey);
+				req.setAttribute("taskName", task1.getProperty("taskName").toString());
+
+			} catch (EntityNotFoundException e) {
+				req.setAttribute("taskName", "タスク名の取得に失敗しました。");
+			}
+
+	        req.setAttribute("taskResult", list1);
+
+			//画面遷移
+			RequestDispatcher rd4 = getServletContext().getRequestDispatcher("/WEB-INF/taskResultList.jsp");
+			rd4.forward(req, resp);
+
+			break;
+
 		}
 	}
+
 
 	@Override
 	protected void doPost(HttpServletRequest req, HttpServletResponse resp)
 	throws ServletException, IOException {
+
+		Long taskID;
+		String taskName;
+		String taskContent;
+		String taskTotal;
+		TaskBean task;
 
 		String menu = req.getParameter("menu");
 		if(menu == null){
@@ -94,82 +159,232 @@ public class TaskServlet extends HttpServlet {
 		switch(menu){
 		case "entry":
 			//タスクを登録する。
-			String task_name = req.getParameter("task_name");
-			String task_content = req.getParameter("task_content");
-			String task_type = req.getParameter("task_type");
-			String task_type1 = req.getParameter("task_type1");
-			String task_priority = req.getParameter("task_priority");
+			taskName = req.getParameter("taskName");
+			taskContent = req.getParameter("taskContent");
+			String taskType = req.getParameter("taskType");
+			String taskSubType = req.getParameter("taskSubType");
+			String taskPriority = req.getParameter("taskPriority");
 
-			StringBuilder buf1 = new StringBuilder();
-			buf1.append(req.getParameter("task_start_year"));
-			buf1.append("/");
-			buf1.append(req.getParameter("task_start_month"));
-			buf1.append("/");
-			buf1.append(req.getParameter("task_start_day"));
-			String task_start = buf1.toString();
+			String taskStartYear = req.getParameter("taskStartYear");
+			String taskStartMonth = req.getParameter("taskStartMonth");
+			String taskStartDay = req.getParameter("taskStartDay");
 
-			StringBuilder buf2 = new StringBuilder();
-			buf2.append(req.getParameter("task_end_year"));
-			buf2.append("/");
-			buf2.append(req.getParameter("task_end_month"));
-			buf2.append("/");
-			buf2.append(req.getParameter("task_end_day"));
-			String task_end = buf2.toString();
+			String taskEndYear = req.getParameter("taskEndYear");
+			String taskEndMonth = req.getParameter("taskEndMonth");
+			String taskEndDay = req.getParameter("taskEndDay");
 
-			String task_hours = req.getParameter("task_hours");
-			String task_minutes = req.getParameter("task_minutes");
+			String taskHours = req.getParameter("taskHours");
+			String taskMinutes = req.getParameter("taskMinutes");
 
-			TaskBean task = new TaskBean(task_name, task_content, task_type,
-					task_type1,task_priority, task_start, task_end, task_hours, task_minutes);
+			taskTotal = req.getParameter("taskTotal");
 
-			HttpSession ss = req.getSession();
-			Key loginKey = KeyFactory.createKey("LOGIN", (String)ss.getAttribute("TOKEN"));
-			DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
-			try {
-				Entity login = ds.get(loginKey);
 
-				//タスクを登録する。
-				if(task.insert((String)login.getProperty("USER_ID")) == "OK"){
-					req.setAttribute("result", "登録完了");
-					RequestDispatcher rd = getServletContext().getRequestDispatcher("/WEB-INF/task_add.jsp");
-					rd.forward(req, resp);
+			task = new TaskBean(taskName, taskContent, taskType,
+					taskSubType,taskPriority, taskStartYear, taskStartMonth, taskStartDay,
+					taskEndYear, taskEndMonth, taskEndDay, taskHours, taskMinutes,
+					getUserID(req),taskTotal);
 
-				}else{
-					//エラーあり タスク入力画面に遷移
-					if(task.getResult_task_name() != "OK"){
-						req.setAttribute("result_task_name", task.getResult_task_name()); }
-					if(task.getResult_task_content() != "OK"){
-						req.setAttribute("result_task_content", task.getResult_task_content()); }
-					if(task.getResult_task_type() != "OK"){
-						req.setAttribute("result_task_type", task.getResult_task_type()); }
-					if(task.getResult_task_priority() != "OK"){
-						req.setAttribute("result_task_priority", task.getResult_task_priority()); }
-					if(task.getResult_task_start() != "OK"){
-						req.setAttribute("result_task_start", task.getResult_task_start()); }
-					if(task.getResult_task_end() != "OK"){
-						req.setAttribute("result_task_end", task.getResult_task_end()); }
-					if(task.getResult_task_hours() != "OK"){
-						req.setAttribute("result_task_hours", task.getResult_task_hours()); }
-
-					req.setAttribute("task_name", task_name);
-					req.setAttribute("task_content", task_content);
-					req.setAttribute("task_hours", task_hours);
-					req.setAttribute("task_minutes", task_minutes);
-
-					RequestDispatcher rd = getServletContext().getRequestDispatcher("/WEB-INF/task_add.jsp");
-					rd.forward(req, resp);
-				}
-
-			} catch (EntityNotFoundException e) {
-				//ログインテーブルの取得エラー
-				req.setAttribute("result", e);
+			//タスクを登録する。
+			if(task.insert() == "OK"){
+				req.setAttribute("result", "登録完了");
 				RequestDispatcher rd = getServletContext().getRequestDispatcher("/WEB-INF/task_add.jsp");
+				rd.forward(req, resp);
+
+			}else{
+				//エラーあり タスク入力画面に遷移
+				if(task.chkTaskName() != "OK"){
+					req.setAttribute("resultTaskName", task.chkTaskName()); }
+				if(task.chkTaskContent() != "OK"){
+					req.setAttribute("resultTaskContent", task.chkTaskContent()); }
+				if(task.chkTaskType() != "OK"){
+					req.setAttribute("resultTaskType", task.chkTaskType()); }
+				if(task.chkTaskPriority() != "OK"){
+					req.setAttribute("resultTaskPriority", task.chkTaskPriority()); }
+				if(task.chkTaskStart() != "OK"){
+					req.setAttribute("resultTaskStart", task.chkTaskStart()); }
+				if(task.chkTaskEnd() != "OK"){
+					req.setAttribute("resultTaskEnd", task.chkTaskEnd()); }
+				if(task.chkTaskMinutes() != "OK"){
+					req.setAttribute("resultTaskHours", task.chkTaskMinutes()); }
+				if(task.chkTaskTotal() != "OK"){
+					req.setAttribute("resultTotal", task.chkTaskTotal()); }
+
+				req.setAttribute("taskName", taskName);
+				req.setAttribute("taskContent", taskContent);
+				req.setAttribute("taskHours", taskHours);
+				req.setAttribute("taskMinutes", taskMinutes);
+				req.setAttribute("taskTotal", taskTotal);
+
+				RequestDispatcher rd = getServletContext().getRequestDispatcher("/WEB-INF/task_add.jsp");
+				rd.forward(req, resp);
+			}
+
+			break;
+
+		case "result": //タスク登録
+
+			taskID = Long.parseLong(req.getParameter("taskID").toString());
+			String workYear = req.getParameter("workYear").toString();
+			String workMonth = req.getParameter("workMonth").toString();
+			String workDay = req.getParameter("workDay").toString();
+			String workload = req.getParameter("workload").toString();
+			String workHours = req.getParameter("workHours").toString();
+			String workMinutes = req.getParameter("workMinutes").toString();
+
+			TaskResultBean trb = new TaskResultBean(taskID, workYear, workMonth, workDay,
+					  								workload, workHours, workMinutes);
+
+			String insertResult = trb.insert();
+
+			if(insertResult == "OK"){
+				req.setAttribute("result", "登録完了");
+				RequestDispatcher rd = getServletContext().getRequestDispatcher("/WEB-INF/task_mod.jsp");
+				rd.forward(req, resp);
+			}else{
+				req.setAttribute("result", insertResult);
+				if(trb.getResultWorkDate() != "OK"){ req.setAttribute("resultWorkDate", trb.getResultWorkDate()); }
+				if(trb.getResultWorkload() != "OK"){ req.setAttribute("resultWorkload", trb.getResultWorkload()); }
+				if(trb.getResultWorkTime() != "OK"){ req.setAttribute("resultWorkTime", trb.getResultWorkTime()); }
+
+				RequestDispatcher rd = getServletContext().getRequestDispatcher("/WEB-INF/task_mod.jsp");
 				rd.forward(req, resp);
 
 			}
 
+			break;
+
+		case "update": //タスク更新
+
+			taskID = lngGetID(req.getParameter("taskID"));
+
+			taskName = req.getParameter("taskName");
+			taskContent = req.getParameter("taskContent");
+			taskTotal = req.getParameter("taskTotal");
+
+			task = new TaskBean(taskID);
+			task.setTaskName(taskName);
+			task.setTaskContent(taskContent);
+			task.setTaskTotal(taskTotal);
+
+			if(task.update() == "OK"){
+				SearchResult sr = taskSearch(req);
+				req.setAttribute("task", sr.getList());
+				req.setAttribute("allPages", sr.getAllPages());
+				req.setAttribute("pages", req.getParameter("pages"));
+			}else{
+				req.setAttribute("errMsg", "タスクが更新できませんでした。");
+			}
+
+			RequestDispatcher rd = getServletContext().getRequestDispatcher("/WEB-INF/task_list.jsp");
+			rd.forward(req, resp);
+
+			break;
+
+		}
+	}
+
+private long lngGetID(String strID){
+
+	int index1 = strID.indexOf("(");
+	int index2 = strID.indexOf(")");
+	if(index1 > 0 && index2 >0){
+		strID = strID.substring(index1+1, index2);
+	}
+	Long ID = Long.parseLong(strID);
+	return ID;
+}
+
+private String strGetID(String strID){
+
+	String ID;
+	int index1 = strID.indexOf("(");
+	int index2 = strID.indexOf(")");
+	if(index1 > 0 && index2 >0){
+		ID = strID.substring(index1+1, index2);
+	}else{
+		ID = strID;
+	}
+
+	return ID;
+}
+
+/**
+ * セッション情報からuserIDを取得します。
+ * @return String userID
+ */
+private String getUserID(HttpServletRequest req){
+	String userID;
+	HttpSession ss = req.getSession();
+	String token = ss.getAttribute("TOKEN").toString();
+	Key loginKey = KeyFactory.createKey("LOGIN", token);
+	DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
+
+		try {
+			Entity login = ds.get(loginKey);
+			userID = (String)login.getProperty("USER_ID");
+		} catch (EntityNotFoundException e) {
+			userID = "NG";
 		}
 
-	}
+	return userID;
+}
+
+private List taskSearch(Long taskID){
+
+	DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
+    // Queryクラスのインスタンスを生成
+    // 引き数にカインド名を指定
+    Query query = new Query("taskResult");
+
+    // QueryクラスのaddFilterメソッドを用いて条件を指定
+    query.setFilter(new Query.FilterPredicate("taskID", FilterOperator.EQUAL, taskID));
+    query.addSort("workDate");
+
+    // 作成したクエリからPrepareQueryクラスのオブジェクトを生成
+    PreparedQuery pQuery = ds.prepare(query);
+
+    FetchOptions fetch =FetchOptions.Builder.withOffset(0);
+    List list = pQuery.asList(fetch);
+
+	return list;
+}
+
+private SearchResult taskSearch(HttpServletRequest req){
+
+	String userID = getUserID(req);
+	int pages;
+
+	try{ pages = Integer.parseInt(req.getParameter("pages"));
+	}catch(NumberFormatException e){ pages = 1; }
+
+	int start = ( pages - 1 ) * displayNumber;
+
+	DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
+    // Queryクラスのインスタンスを生成
+    // 引き数にカインド名を指定
+    Query query = new Query("TASK");
+
+    // QueryクラスのaddFilterメソッドを用いて条件を指定
+    query.setFilter(new Query.FilterPredicate("userID", FilterOperator.EQUAL, userID));
+    query.addSort("taskStart");
+
+    // 作成したクエリからPrepareQueryクラスのオブジェクトを生成
+    PreparedQuery pQuery = ds.prepare(query);
+
+    FetchOptions fetch =FetchOptions.Builder.withOffset(start).limit(displayNumber);
+    FetchOptions fetchAll =FetchOptions.Builder.withOffset(0);
+
+    List list = pQuery.asList(fetch);
+    int allNumber = pQuery.countEntities(fetchAll);
+
+    //必要なページ数の計算
+    float wk1 = allNumber;
+	float wk2 = displayNumber;
+	int allPages = (int)Math.ceil( wk1 / wk2 );
+
+    SearchResult sr = new SearchResult(list, allNumber, allPages);
+
+	return sr;
+}
 
 }
