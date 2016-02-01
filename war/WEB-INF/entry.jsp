@@ -14,24 +14,20 @@
 <br>
 新規会員登録　内容入力<br>
 <br>
-<% if(request.getAttribute("err_email") == "1"){ %>
-Eメールアドレスが入力されていません。<br><% } %>
-<% if(request.getAttribute("err_email") == "2"){ %>
-Eメールアドレスを正しく入力してください。<br><% } %>
-<% if(request.getAttribute("err_email") == "3"){ %>
-このアドレスは既に登録されています。<br><% } %>
-<% if(request.getAttribute("err_password") == "1"){ %>
-パスワードが入力されていません。<br><% } %>
-<% if(request.getAttribute("err_name") == "1"){ %>
-名前が入力されていません。<br><% } %>
-<% if(request.getAttribute("err_nickname") == "1"){ %>
-ニックネームが入力されていません。<br><% } %>
+<% if(request.getAttribute("result_email") != null){ %>
+<font color="red"><%= request.getAttribute("result_email") %></font><br><% } %>
+<% if(request.getAttribute("result_password") != null){ %>
+<font color="red"><%= request.getAttribute("result_password") %></font><br><% } %>
+<% if(request.getAttribute("result_name") != null){ %>
+<font color="red"><%= request.getAttribute("result_name") %></font><br><% } %>
+<% if(request.getAttribute("result_nickname") != null){ %>
+<font color="red"><%= request.getAttribute("result_nickname") %></font><br><% } %>
 <br>
 <form action="/entry" method="post">
 Eメールアドレス<br>
 <input type="text" name="email" value="${email}"/><br>
 パスワード<br>
-<input type="text" name="password" value="${password}" /><br>
+<input type="password" name="password" value="${password}" /><br>
 氏名<br>
 <input type="text" name="name" value="${name}"/><br>
 ニックネーム<br>
@@ -42,6 +38,7 @@ Eメールアドレス<br>
 </form>
 <br>
 <br>
+<a href='/index'>トップページに戻る</a><br>
 <br>
 </body>
 </html>

@@ -28,7 +28,10 @@ Eメールアドレス<br>
 <br>
 <br>
 <br>
-　
-
+<%= session.getAttribute("STATUS") %><br>
+<%= session.getAttribute("TOKEN") %><br>
+<FORM NAME="form" METHOD="GET" ACTION="/mypage">
+<A HREF="javascript:document.form.submit()">マイページへ</A>
+</FORM>
 </body>
 </html>

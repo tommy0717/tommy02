@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<datastore-indexes autoGenerate="true">
+    <datastore-index kind="TASK" ancestor="false">
+        <property name="userID" direction="asc"/>
+        <property name="taskStart" direction="asc"/>
+    </datastore-index>
+
+    <datastore-index kind="taskResult" ancestor="false">
+        <property name="taskID" direction="asc"/>
+        <property name="workDate" direction="asc"/>
+    </datastore-index>
+
+
+</datastore-indexes>

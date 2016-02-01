@@ -6,4 +6,11 @@
     <schedule>every 12 hours</schedule>
     <timezone>Asia/Tokyo</timezone>
   </cron>
+
+  <cron>
+		<url>/_ah/sessioncleanup?clear</url>
+		<description>Clean up sessions</description>
+		<schedule>every 12 hours</schedule>
+	</cron>
+
 </cronentries>

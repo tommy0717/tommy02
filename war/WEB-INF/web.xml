@@ -5,23 +5,90 @@ xmlns:web="http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
 xsi:schemaLocation="http://java.sun.com/xml/ns/javaee
 http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" version="2.5">
 	<servlet>
-		<servlet-name>Tommy02</servlet-name>
-		<servlet-class>com.appspot.tommy02.Tommy02Servlet</servlet-class>
+		<servlet-name>test</servlet-name>
+		<servlet-class>com.appspot.tommy02.TestServlet</servlet-class>
 	</servlet>
 	<servlet-mapping>
-		<servlet-name>Tommy02</servlet-name>
-		<url-pattern>/tommy02</url-pattern>
+		<servlet-name>test</servlet-name>
+		<url-pattern>/test</url-pattern>
 	</servlet-mapping>
-	
+
+	<servlet>
+		<servlet-name>task</servlet-name>
+		<servlet-class>com.appspot.tommy02.TaskServlet</servlet-class>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>task</servlet-name>
+		<url-pattern>/task</url-pattern>
+	</servlet-mapping>
+
 	<servlet>
 		<servlet-name>index</servlet-name>
 		<servlet-class>com.appspot.tommy02.IndexServlet</servlet-class>
-	</servlet>	
+	</servlet>
 	<servlet-mapping>
 		<servlet-name>index</servlet-name>
 		<url-pattern>/index</url-pattern>
 	</servlet-mapping>
-	
+
+	<servlet>
+		<servlet-name>entry</servlet-name>
+		<servlet-class>com.appspot.tommy02.EntryServlet</servlet-class>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>entry</servlet-name>
+		<url-pattern>/entry</url-pattern>
+	</servlet-mapping>
+
+	<servlet>
+		<servlet-name>mypage</servlet-name>
+		<servlet-class>com.appspot.tommy02.MypageServlet</servlet-class>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>mypage</servlet-name>
+		<url-pattern>/mypage</url-pattern>
+	</servlet-mapping>
+
+	<servlet>
+		<servlet-name>cron1</servlet-name>
+		<servlet-class>com.appspot.tommy02.Cron1Servlet</servlet-class>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>cron1</servlet-name>
+		<url-pattern>/cron1</url-pattern>
+	</servlet-mapping>
+
+	<servlet>
+        <servlet-name>SessionCleanupServlet</servlet-name>
+        <servlet-class>com.google.apphosting.utils.servlet.SessionCleanupServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>SessionCleanupServlet</servlet-name>
+        <url-pattern>/admin/sessioncleanup</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+		<servlet-name>_ah_sessioncleanup</servlet-name>
+		<servlet-class>com.google.apphosting.utils.servlet.SessionCleanupServlet</servlet-class>
+	</servlet>
+
+	<servlet-mapping>
+		<servlet-name>_ah_sessioncleanup</servlet-name>
+		<url-pattern>/_ah/sessioncleanup</url-pattern>
+	</servlet-mapping>
+
+	<security-constraint>
+	<web-resource-collection>
+		<web-resource-name>session-cleanup</web-resource-name>
+		<url-pattern>/_ah/sessioncleanup</url-pattern>
+	</web-resource-collection>
+
+		<auth-constraint>
+			<role-name>admin</role-name>
+		</auth-constraint>
+
+	</security-constraint>
+
 	<welcome-file-list>
 		<welcome-file>index.jsp</welcome-file>
 	</welcome-file-list>

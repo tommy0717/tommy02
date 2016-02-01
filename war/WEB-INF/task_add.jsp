@@ -16,44 +16,46 @@
 <br>
 <% if(request.getAttribute("result") != null){ %>
 <font color="red"><%= request.getAttribute("result") %></font><br><% } %>
-<% if(request.getAttribute("result_task_name") != null){ %>
-<font color="red"><%= request.getAttribute("result_task_name") %></font><br><% } %>
-<% if(request.getAttribute("result_task_content") != null){ %>
-<font color="red"><%= request.getAttribute("result_task_content") %></font><br><% } %>
-<% if(request.getAttribute("result_task_type") != null){ %>
-<font color="red"><%= request.getAttribute("result_task_type") %></font><br><% } %>
-<% if(request.getAttribute("result_task_priority") != null){ %>
-<font color="red"><%= request.getAttribute("result_task_priority") %></font><br><% } %>
-<% if(request.getAttribute("result_task_start") != null){ %>
-<font color="red"><%= request.getAttribute("result_task_start") %></font><br><% } %>
-<% if(request.getAttribute("result_task_end") != null){ %>
-<font color="red"><%= request.getAttribute("result_task_end") %></font><br><% } %>
-<% if(request.getAttribute("result_task_hours") != null){ %>
-<font color="red"><%= request.getAttribute("result_task_hours") %></font><br><% } %>
+<% if(request.getAttribute("resultTaskName") != null){ %>
+<font color="red"><%= request.getAttribute("resultTaskName") %></font><br><% } %>
+<% if(request.getAttribute("resultTaskContent") != null){ %>
+<font color="red"><%= request.getAttribute("resultTaskContent") %></font><br><% } %>
+<% if(request.getAttribute("resultTaskType") != null){ %>
+<font color="red"><%= request.getAttribute("resultTaskType") %></font><br><% } %>
+<% if(request.getAttribute("resultTaskPriority") != null){ %>
+<font color="red"><%= request.getAttribute("resultTaskPriority") %></font><br><% } %>
+<% if(request.getAttribute("resultTaskStart") != null){ %>
+<font color="red"><%= request.getAttribute("resultTaskStart") %></font><br><% } %>
+<% if(request.getAttribute("resultTaskEnd") != null){ %>
+<font color="red"><%= request.getAttribute("resultTaskEnd") %></font><br><% } %>
+<% if(request.getAttribute("resultTaskHours") != null){ %>
+<font color="red"><%= request.getAttribute("resultTaskHours") %></font><br><% } %>
+<% if(request.getAttribute("resultTotal") != null){ %>
+<font color="red"><%= request.getAttribute("resultTotal") %></font><br><% } %>
 <br>
 <form name="form" action="/task" method="post">
 タスク名<br>
-<input type="text" name="task_name" value="${task_name}"/><br>
+<input type="text" name="taskName" value="${taskName}"/><br>
 タスク内容<br>
-<input type="text" name="task_content" size="50" value="${task_content}"/><br>
+<input type="text" name="taskContent" size="50" value="${taskContent}"/><br>
 タスク種別（定例／通常）<br>
 <!-- set name and onChange -->
-<select name="task_type" onChange="selectBunruiA(this)">
+<select name="taskType" onChange="selectBunruiA(this)">
 	<option value="">（種別）</option>
 	<option value="normal">通常</option>
 	<option value="routine">定期</option>
 </select>
-<select name="task_type1" width="100px">
+<select name="taskSubType" width="100px">
 	<option value="">(周期)</option>
 </select><br>
 優先度<br>
-<select name="task_priority">
+<select name="taskPriority">
 	<option value="high">高</option>
 	<option value="middle" selected>中</option>
 	<option value="low">低</option>
 </select><br>
 開始日<br>
-<select name="task_start_year">
+<select name="taskStartYear">
 <% Date date = new Date();
 	SimpleDateFormat sdf1 = new SimpleDateFormat("yyyy");
 	SimpleDateFormat sdf2 = new SimpleDateFormat("M");
@@ -64,13 +66,13 @@
 <option value="<%= y %>" selected><%= y %></option><% }else{ %>
 <option value="<%= y %>"><%= y %></option><% } } %>
 </select>年
-<select name="task_start_month">
+<select name="taskStartMonth">
 <% for(int m = 1; m <= 12; m++){
 	if(String.valueOf(m).equals(sdf2.format(date))){ %>
 <option value="<%= m %>" selected><%= m %></option><% }else{ %>
 <option value="<%= m %>"><%= m %></option><% } } %>
 </select>月
-<select name="task_start_day">
+<select name="taskStartDay">
 <% for(int d = 1; d <= 31; d++){
 	if(String.valueOf(d).equals(sdf3.format(date))){ %>
 <option value="<%= d %>" selected><%= d %></option><% }else{ %>
@@ -78,19 +80,19 @@
 </select>日
 <br>
 終了日<br>
-<select name="task_end_year">
+<select name="taskEndYear">
 <% for(int y = 2010; y <= 2100; y++){
 	if(String.valueOf(y).equals(sdf1.format(date))){ %>
 <option value="<%= y %>" selected><%= y %></option><% }else{ %>
 <option value="<%= y %>"><%= y %></option><% } } %>
 </select>年
-<select name="task_end_month">
+<select name="taskEndMonth">
 <% for(int m = 1; m <= 12; m++){
 	if(String.valueOf(m).equals(sdf2.format(date))){ %>
 <option value="<%= m %>" selected><%= m %></option><% }else{ %>
 <option value="<%= m %>"><%= m %></option><% } } %>
 </select>月
-<select name="task_end_day">
+<select name="taskEndDay">
 <% for(int d = 1; d <= 31; d++){
 	if(String.valueOf(d).equals(sdf3.format(date))){ %>
 <option value="<%= d %>" selected><%= d %></option><% }else{ %>
@@ -98,10 +100,10 @@
 </select>日
 <br>
 予定作業時間<br>
-※通常タスク：タスク完了までの予定時間<br>
-※定例タスク：１回あたりの予定時間<br>
-<input type="text" name="task_hours" value="${task_hours}"/>時間
-<input type="text" name="task_minutes" value="${task_minutes}"/>分<br>
+<input type="text" name="taskHours" value="${taskHours}" size="5"/>時間
+<input type="text" name="taskMinutes" value="${taskMinutes}" size="5"/>分<br>
+作業量（作成する成果物の総数など）<br>
+<input type="text" name="taskTotal" value="${taskTotal}" size="5"/><br>
 <br>
 <input type="hidden" name="menu" value="entry">
 <input type="submit" value="タスク登録" />
@@ -109,11 +111,6 @@
 <br>
 <a href='/mypage'>マイページに戻る</a><br>
 <br>
-【実績】<br>
-作業日<br>
-作業時間<br>
-進捗率（％）<br>
-備考<br>
 <br>
 
 <script type="text/javascript" language="JavaScript">
@@ -127,7 +124,7 @@
     bunruiB["routine_value"]= new Array("year","month","day");
 
     // 分類Aの選択リストを作成
-    createSelection( form.elements['task_type'], "(種別)", bunruiA, bunruiA);
+    createSelection( form.elements['taskType'], "(種別)", bunruiA, bunruiA);
 
     ////////////////////////////////////////////////////
     //
@@ -162,7 +159,7 @@
     function selectBunruiA(obj)
     {
         // 選択肢を動的に生成
-        createSelection(form.elements['task_type1'], "(周期)",
+        createSelection(form.elements['taskSubType'], "(周期)",
                 bunruiB[obj.value+'_value'], bunruiB[obj.value]);
 
     }
