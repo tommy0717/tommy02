@@ -10,10 +10,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import com.google.appengine.api.datastore.DatastoreService;
-import com.google.appengine.api.datastore.DatastoreServiceFactory;
-import com.google.appengine.api.datastore.Entity;
-
 @SuppressWarnings("serial")
 public class EntryServlet extends HttpServlet {
 
@@ -31,46 +27,39 @@ public class EntryServlet extends HttpServlet {
 	protected void doPost(HttpServletRequest req, HttpServletResponse resp)
 	throws ServletException, IOException {
 
+			AccountBean ac;
+
 			/* パラメータを取得する */
 			String status = req.getParameter("status");
 			String email = req.getParameter("email");
 			String password = req.getParameter("password");
 			String name = req.getParameter("name");
-			String nickname = req.getParameter("nickname");
 
 			/* ステータスごとに処理を行う */
 			switch(status){
 			case "entry": // 入力内容確認処理を行う
 
-				ValidationBean VB = new ValidationBean();
-				String result_email = VB.emailCheck(email);
-				String result_password = VB.passwordCheck(password);
-				String result_name = VB.nameCheck(name);
-				String result_nickname = VB.nicknameCheck(nickname);
+				ac = new AccountBean(email, name, password);
 
 				req.setAttribute("email", email);
 				req.setAttribute("password", password);
 				req.setAttribute("name", name);
-				req.setAttribute("nickname", nickname);
 
-				if(result_email == "OK"&&
-					result_password == "OK"&&
-					result_name == "OK" &&
-					result_nickname =="OK"){
+				if(ac.chkEmail() == "OK"&&
+					ac.chkPassword() == "OK"&&
+					ac.chkUserName() == "OK"){
 
 					RequestDispatcher rd = getServletContext().getRequestDispatcher("/WEB-INF/entry_check.jsp");
 					rd.forward(req, resp);
 
 				}else{
 					// エラーがある場合のみ、エラーコードを設定
-					if(result_email != "OK"){
-						req.setAttribute("result_email", result_email);}
-					if(result_password != "OK"){
-						req.setAttribute("result_password", result_password);}
-					if(result_name != "OK"){
-						req.setAttribute("result_name", result_name);}
-					if(result_nickname != "OK"){
-						req.setAttribute("result_nickname", result_nickname);}
+					if(ac.chkEmail() != "OK"){
+						req.setAttribute("result_email", ac.chkEmail());}
+					if(ac.chkPassword() != "OK"){
+						req.setAttribute("result_password", ac.chkPassword());}
+					if(ac.chkUserName() != "OK"){
+						req.setAttribute("result_name", ac.chkUserName());}
 
 					RequestDispatcher rd = getServletContext().getRequestDispatcher("/WEB-INF/entry.jsp");
 					rd.forward(req, resp);
@@ -80,34 +69,24 @@ public class EntryServlet extends HttpServlet {
 					break;
 
 			case "check": // 登録処理を行う
-				/* データストアに情報を保存する 110ページ参照 */
-				DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
-				try{
-					Entity User = new Entity("User",email);
-					User.setProperty("email", email);
-					User.setProperty("password", password);
-					User.setProperty("name", name);
-					User.setProperty("nickname", nickname);
-					User.setProperty("lastTaskNo", "0");
-					ds.put(User);
 
-				}catch(Exception e){
-					/* エラー */
-					email = "登録エラー";
+				ac = new AccountBean(email, name, password);
+				String insertResult = ac.insert();
+
+				if(insertResult != "OK"){
+
+					req.setAttribute("email", email);
+					req.setAttribute("password", password);
+					req.setAttribute("name", name);
+
+					req.setAttribute("result_email", insertResult);
+					RequestDispatcher rd = getServletContext().getRequestDispatcher("/WEB-INF/entry.jsp");
+					rd.forward(req, resp);
+
 				}
 
-//				********************JDOを使用する場合（パフォーマンスが悪いのでボツ）
-//				PersistenceManager pm = PMF.get().getPersistenceManager();
-//				try{
-//					User user = new User(email, password, name, nickname);
-//					pm.makePersistent(user);
-//				}finally{
-//					pm.close();
-//				}
-//				********************ここまで
-
-				AccountBean login = new AccountBean();
-				String result = login.Login(email,password);
+				TerminalBean login = new TerminalBean();
+				String result = login.Login(email,password,"first");
 
 				switch(result){
 				case "NG_userid":
@@ -140,7 +119,6 @@ public class EntryServlet extends HttpServlet {
 					req.setAttribute("email", email);
 					req.setAttribute("password", password);
 					req.setAttribute("name", name);
-					req.setAttribute("nickname", nickname);
 
 					RequestDispatcher rd1 = getServletContext().getRequestDispatcher("/WEB-INF/entry_finish.jsp");
 					rd1.forward(req, resp);
@@ -152,7 +130,6 @@ public class EntryServlet extends HttpServlet {
 				req.setAttribute("email", email);
 				req.setAttribute("password", password);
 				req.setAttribute("name", name);
-				req.setAttribute("nickname", nickname);
 
 				RequestDispatcher rd2 = getServletContext().getRequestDispatcher("/WEB-INF/entry.jsp");
 				rd2.forward(req, resp);

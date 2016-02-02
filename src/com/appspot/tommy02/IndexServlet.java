@@ -43,7 +43,7 @@ public class IndexServlet extends HttpServlet {
 				  }
 
 				//ログイン認証
-				AccountBean login1 = new AccountBean((String)session.getAttribute("STATUS"),
+				TerminalBean login1 = new TerminalBean((String)session.getAttribute("STATUS"),
 												(String)session.getAttribute("TOKEN"),
 												cok_token);
 				String result = login1.LoginCheck();

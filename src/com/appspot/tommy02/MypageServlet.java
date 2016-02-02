@@ -37,7 +37,7 @@ public class MypageServlet extends HttpServlet {
 		switch(menu){
 		case "logout":
 			//ログアウト処理
-			AccountBean login = new AccountBean();
+			TerminalBean login = new TerminalBean();
 			login.setSes_token((String)session.getAttribute("TOKEN"));
 			login.Logout();         //ログインテーブルの削除
 			session.invalidate();   //既存セッション破棄
@@ -49,7 +49,7 @@ public class MypageServlet extends HttpServlet {
 
 		default:
 			//ログイン認証
-			AccountBean login1 = new AccountBean((String)session.getAttribute("STATUS"),
+			TerminalBean login1 = new TerminalBean((String)session.getAttribute("STATUS"),
 											(String)session.getAttribute("TOKEN"),
 											cok_token);
 			String result = login1.LoginCheck();
@@ -100,8 +100,8 @@ public class MypageServlet extends HttpServlet {
 
 		if(menu.equals("login")){
 
-			AccountBean login = new AccountBean();
-			String result = login.Login(userid,password);
+			TerminalBean login = new TerminalBean();
+			String result = login.Login(userid,password,"second");
 
 			switch(result){
 			case "NG_userid":
