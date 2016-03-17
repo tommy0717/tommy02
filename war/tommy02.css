@@ -1,0 +1,105 @@
+@	CHARSET "UTF-8";
+
+*{
+	font-family: "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+	font-size:12px;
+	padding:1px;
+
+	scrollbar-face-color: gray;
+	scrollbar-track-color: white;
+	scrollbar-arrow-color: white;
+	scrollbar-highlight-color: gray;
+	scrollbar-shadow-color: gray;
+	scrollbar-3dlight-color: white;
+	scrollbar-darkshadow-color: white;
+}
+
+body{
+}
+
+input,textarea,select{
+	border:solid 1px;
+	margin:2px;
+	-webkit-border-radius: 3px;
+	-moz-border-radius: 3px;
+	border-radius: 3px;
+}
+
+a{
+	text-decoration: none;
+	color:navy;
+}
+
+a:hover{
+	text-decoration: underline;
+}
+
+div#title{
+	background-color: gray;
+	color: white;
+	padding: 5px;
+}
+
+div#header{
+	background-color: silver;
+	text-align: left;
+	word-spacing: 1em;
+	padding: 5px;
+	word-wrap:break-all;
+}
+
+div#header a{
+	color: white;
+}
+
+table {
+	width: 100%;
+	border: 2px white solid;
+	border-collapse: collapse;
+	background-color: #87ceeb;
+
+}
+td, th {
+	border: 2px white solid;
+	text-align: center;
+	vertical-align: middle;
+	padding: 10px 10px;
+
+}
+
+/* @media
+only screen and (-webkit-min-device-pixel-ratio : 1.5),
+only screen and (min-device-pixel-ratio : 1.5) { */
+@media screen and (min-width: 375px) and (max-width: 413px) {
+
+	table{
+		border:0;
+	}
+
+	table thead{
+		display:none;
+	}
+
+	table tr{
+		margin-bottom:10px;
+		display:block;
+		border-bottom:2px solid #ddd;
+	}
+
+	table td{
+		display:block;
+		text-align:right;
+		font-size:13px;
+		border-bottom:1px dotted #ccc;
+	}
+
+	table td:last-child{
+		border-bottom:0;
+	}
+
+	table td:before {
+		content:attr(data-label);
+		float:left;
+		font-weight: bold;
+	}
+}

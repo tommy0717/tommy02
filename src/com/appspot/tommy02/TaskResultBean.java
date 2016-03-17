@@ -3,14 +3,22 @@ package com.appspot.tommy02;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.List;
+import java.util.TimeZone;
 
-import com.google.appengine.api.datastore.DatastoreFailureException;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
+import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
+import com.google.appengine.api.datastore.PreparedQuery;
+import com.google.appengine.api.datastore.Query;
+import com.google.appengine.api.datastore.Query.FilterOperator;
 
 
 public class TaskResultBean {
@@ -23,6 +31,8 @@ public class TaskResultBean {
 	private String workload;
 	private String workHours;
 	private String workMinutes;
+	private String workMemo;
+	private String userID;
 
 	private String workDate;
 	private String workTime;
@@ -31,6 +41,9 @@ public class TaskResultBean {
 	private String resultWorkTime;
 	private String resultWorkDate;
 
+	public TaskResultBean(){
+
+	}
 
 	public TaskResultBean(Long taskResultID){
 		//コンストラクタ（実績の修正、削除時）
@@ -38,7 +51,8 @@ public class TaskResultBean {
 	}
 
 	public TaskResultBean(Long taskID, String workYear, String workMonth, String workDay,
-						  String workload, String workHours, String workMinutes){
+						  String workload, String workHours, String workMinutes,String workMemo,
+						  String userID){
 		//コンストラクタ（タスクの新規登録時）
 		this.taskID = taskID;
 		this.workYear = Integer.parseInt(workYear);
@@ -47,6 +61,8 @@ public class TaskResultBean {
 		this.workload = workload;
 		this.workHours = workHours;
 		this.workMinutes = workMinutes;
+		this.workMemo = workMemo;
+		this.userID = userID;
 
 		StringBuilder buf1 = new StringBuilder();
 		buf1.append(this.workYear);
@@ -60,6 +76,52 @@ public class TaskResultBean {
 		workTimeCheck();
 		workDateCheck();
 
+	}
+
+	public String get(){
+		String result = "";
+
+		Key key = KeyFactory.createKey("taskResult", taskResultID);
+		DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
+
+		Entity trt;
+		try {
+			trt = ds.get(key);
+			taskID = Long.parseLong(trt.getProperty("taskID").toString());
+			userID = trt.getProperty("userID").toString();
+			workDate = trt.getProperty("workDate").toString();
+			workload = trt.getProperty("workload").toString();
+			workMemo = trt.getProperty("workMemo").toString();
+			workTime = trt.getProperty("workTime").toString();
+			result = "OK";
+
+		} catch (EntityNotFoundException e) {
+			// TODO 自動生成された catch ブロック
+			result = "NG";
+		}
+		return result;
+	}
+
+	public String update(){
+		String result = "";
+
+		Key key = KeyFactory.createKey("taskResult", taskResultID);
+		DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
+
+		Entity trt;
+		try {
+			trt = ds.get(key);
+			if(this.resultWorkload.equals("OK")){ trt.setProperty("workload", workload); }
+			if(this.resultWorkTime.equals("OK")){ trt.setProperty("workTime", workTime); }
+			trt.setProperty("workMemo", workMemo);
+			ds.put(trt);
+			result = "OK";
+
+		} catch (EntityNotFoundException e) {
+			// TODO 自動生成された catch ブロック
+			result = "NG";
+		}
+		return result;
 	}
 
 	public String insert(){
@@ -76,37 +138,16 @@ public class TaskResultBean {
 			taskResult.setProperty("workload", workload);
 			taskResult.setProperty("workDate", workDate);
 			taskResult.setProperty("workTime", workTime);
+			taskResult.setProperty("workMemo", workMemo);
+			taskResult.setProperty("userID", userID);
 			ds.put(taskResult);
 
 			//タスクマスタに加算（作業時間、作業量）
-			TaskBean task = new TaskBean(taskID);
-			if(task.get() == "OK"){
+			TaskBean task = new TaskBean();
+			task.taskResultInsert(taskID, Integer.parseInt(workload), Integer.parseInt(workTime));
 
-				int wl;
-				int rt;
-				try{
-					wl = task.getTaskWorkload();
-					wl = wl + Integer.parseInt(workload);
-				}catch(NumberFormatException e){
-					wl = Integer.parseInt(workload);
-				}
-				try{
-					rt = task.getTaskWorkMinutes();
-					rt = rt + Integer.parseInt(workTime);
-				}catch(NumberFormatException e){
-					rt = Integer.parseInt(workTime);
-				}
+			result = "OK";
 
-				task.setTaskWorkload(Integer.toString(wl));
-				task.setTaskWorkMinutes("0",Integer.toString(rt));
-				if(task.update() == "OK"){
-					result = "OK";
-				}else{
-					result = "タスクマスタへの登録に失敗しました。";
-				}
-			}else{
-				result = "該当のタスクが見つかりません。";
-			}
 		}else{
 			result = "セットされた情報に誤りがあります。";
 		}
@@ -120,39 +161,23 @@ public class TaskResultBean {
 		Key key = KeyFactory.createKey("taskResult", taskResultID);
 		DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
 
+		Entity trt;
 		try {
-			Entity trt = ds.get(key);
-			TaskBean task = new TaskBean(Long.parseLong(trt.getProperty("taskID").toString()));
+			trt = ds.get(key);
 
-			if(task.get() == "OK"){
+			int wl = Integer.parseInt(trt.getProperty("workload").toString());
+			int wt = Integer.parseInt(trt.getProperty("workTime").toString());
 
-				int wk1 = Integer.parseInt(trt.getProperty("workload").toString());
-				int wk2 = Integer.parseInt(trt.getProperty("workTime").toString());
-
-				int taskWorkload = task.getTaskWorkload();
-				int taskWorkMinutes = task.getTaskWorkMinutes();
-
-				taskWorkload = taskWorkload - wk1;
-				taskWorkMinutes = taskWorkMinutes - wk2;
-
-				task.setTaskWorkload(Integer.toString(taskWorkload));
-				task.setTaskWorkMinutes("0", Integer.toString(taskWorkMinutes));
-
-				if(task.update() == "OK"){
-					result = "OK";
-				}else{
-					result = "NG";
-				}
-			}
+			TaskBean task = new TaskBean();
+			task.taskResultDelete(Long.parseLong(trt.getProperty("taskID").toString()), wl, wt);
 
 			ds.delete(key);
+
 			result = "OK";
-		}catch(IllegalArgumentException e){
-			result = "削除エラー" + e;
-		}catch(DatastoreFailureException e){
-			result = "削除エラー" + e;
+
 		} catch (EntityNotFoundException e) {
-			result = "削除エラー" + e;
+			// TODO 自動生成された catch ブロック
+			result = "NG";
 		}
 
 		return result;
@@ -209,6 +234,32 @@ public class TaskResultBean {
 	}
 
 	/**
+	 * workloadを設定します。
+	 * @param workload workload
+	 */
+	public void setWorkload(String workload) {
+	    this.workload = workload;
+	    workloadCheck();
+	}
+
+	/**
+	 * workMemoを設定します。
+	 * @param workMemo workMemo
+	 */
+	public void setWorkMemo(String workMemo) {
+	    this.workMemo = workMemo;
+	}
+
+	/**
+	 * workTimeを設定します。
+	 * @param workTime workTime
+	 */
+	public void setWorkTime(String workTime) {
+	    this.workTime = workTime;
+	    workTimeCheck();
+	}
+
+	/**
 	 * resultWorkloadを取得します。
 	 * @return resultWorkload
 	 */
@@ -231,5 +282,66 @@ public class TaskResultBean {
 	public String getResultWorkDate() {
 	    return resultWorkDate;
 	}
+
+	/**
+	 * 今日の実績を取得します。
+	 * @return List<String>
+	 */
+	public List<String> todayTaskResult(String userID, int dayChange){
+		List<String> todayTaskResult = new ArrayList<String>();
+		StringBuilder str = new StringBuilder();
+
+		TimeZone tz = TimeZone.getTimeZone("Asia/Tokyo");
+		DateFormat format = new SimpleDateFormat("yyyy/MM/dd");
+		format.setTimeZone(tz);
+
+		Calendar cal = Calendar.getInstance(tz);
+		if(dayChange != 0){
+			cal.add(Calendar.DAY_OF_MONTH, dayChange);
+		}
+
+		Date now = cal.getTime();
+
+		DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
+		FetchOptions fetch =FetchOptions.Builder.withOffset(0).limit(100);
+
+		Query query = new Query("taskResult");
+
+		// QueryクラスのaddFilterメソッドを用いて条件を指定
+		query.setFilter(new Query.FilterPredicate("userID", FilterOperator.EQUAL, userID));
+		query.setFilter(new Query.FilterPredicate("workDate", FilterOperator.EQUAL, format.format(now)));
+//		query.addSort("taskStart",Query.SortDirection.ASCENDING);
+
+		// 作成したクエリからPrepareQueryクラスのオブジェクトを生成
+		PreparedQuery pQuery = ds.prepare(query);
+
+		List list = pQuery.asList(fetch);
+
+		if(list.size() > 0){
+			Entity taskResult;
+			TaskBean task;
+
+			for(int i = 0; i < list.size(); i++){
+				taskResult = (Entity)list.get(i);
+
+				if(taskResult.getProperty("workMemo") != null){
+					str.setLength(0);
+					task = new TaskBean(Long.parseLong(taskResult.getProperty("taskID").toString()));
+
+					if(task.get().equals("OK")){
+						str.append("◆");
+						str.append(task.getTaskName());
+						str.append(" : ");
+						str.append(taskResult.getProperty("workMemo").toString());
+						todayTaskResult.add(str.toString());
+					}
+				}
+			}
+		}
+
+		return todayTaskResult;
+	}
+
+
 
 }

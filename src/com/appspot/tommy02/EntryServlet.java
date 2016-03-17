@@ -13,12 +13,17 @@ import javax.servlet.http.HttpSession;
 @SuppressWarnings("serial")
 public class EntryServlet extends HttpServlet {
 
+	String status;
+	String email;
+	String password;
+	String name;
+	String emailSend;
+
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp)
 	throws ServletException, IOException {
 
-			/*/WEB-INF/index.jspを呼び出す */
-			RequestDispatcher rd = getServletContext().getRequestDispatcher("/WEB-INF/index.jsp");
+			RequestDispatcher rd = getServletContext().getRequestDispatcher("/WEB-INF/entry.jsp");
 			rd.forward(req, resp);
 	}
 
@@ -30,20 +35,14 @@ public class EntryServlet extends HttpServlet {
 			AccountBean ac;
 
 			/* パラメータを取得する */
-			String status = req.getParameter("status");
-			String email = req.getParameter("email");
-			String password = req.getParameter("password");
-			String name = req.getParameter("name");
+			getRequest(req);
 
 			/* ステータスごとに処理を行う */
 			switch(status){
 			case "entry": // 入力内容確認処理を行う
 
-				ac = new AccountBean(email, name, password);
-
-				req.setAttribute("email", email);
-				req.setAttribute("password", password);
-				req.setAttribute("name", name);
+				ac = new AccountBean(email, name, password, emailSend);
+				req = setRequest(req);
 
 				if(ac.chkEmail() == "OK"&&
 					ac.chkPassword() == "OK"&&
@@ -66,18 +65,16 @@ public class EntryServlet extends HttpServlet {
 
 				}
 
-					break;
+				break;
 
 			case "check": // 登録処理を行う
 
-				ac = new AccountBean(email, name, password);
+				ac = new AccountBean(email, name, password, emailSend);
 				String insertResult = ac.insert();
 
 				if(insertResult != "OK"){
 
-					req.setAttribute("email", email);
-					req.setAttribute("password", password);
-					req.setAttribute("name", name);
+					req = setRequest(req);
 
 					req.setAttribute("result_email", insertResult);
 					RequestDispatcher rd = getServletContext().getRequestDispatcher("/WEB-INF/entry.jsp");
@@ -116,9 +113,7 @@ public class EntryServlet extends HttpServlet {
 					newSession.setAttribute("STATUS", "login");
 
 					/* 登録完了ページを出力する */
-					req.setAttribute("email", email);
-					req.setAttribute("password", password);
-					req.setAttribute("name", name);
+					req = setRequest(req);
 
 					RequestDispatcher rd1 = getServletContext().getRequestDispatcher("/WEB-INF/entry_finish.jsp");
 					rd1.forward(req, resp);
@@ -127,9 +122,7 @@ public class EntryServlet extends HttpServlet {
 				break;
 
 			case "modify": // 入力内容の修正を行う
-				req.setAttribute("email", email);
-				req.setAttribute("password", password);
-				req.setAttribute("name", name);
+				req = setRequest(req);
 
 				RequestDispatcher rd2 = getServletContext().getRequestDispatcher("/WEB-INF/entry.jsp");
 				rd2.forward(req, resp);
@@ -137,7 +130,30 @@ public class EntryServlet extends HttpServlet {
 				break;
 
 			}
+	}
 
+	private void getRequest(HttpServletRequest req){
+
+		status = req.getParameter("status");
+		email = req.getParameter("email");
+		password = req.getParameter("password");
+		name = req.getParameter("name");
+		if(req.getParameter("emailSend") == null || req.getParameter("emailSend") == "" ||
+				req.getParameter("emailSend").equals("NG")){
+				emailSend = "NG";
+			}else{
+				emailSend ="OK";
+			}
+	}
+
+	private HttpServletRequest setRequest(HttpServletRequest req){
+
+		req.setAttribute("email", email);
+		req.setAttribute("password", password);
+		req.setAttribute("name", name);
+		req.setAttribute("emailSend", emailSend);
+
+		return req;
 	}
 
 }

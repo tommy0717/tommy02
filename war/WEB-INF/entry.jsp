@@ -7,6 +7,8 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="initial-scale=1.0">
+<link rel="stylesheet" type="text/css" href="tommy02.css?var=20160214"/>
 <title>新規会員登録　内容入力</title>
 </head>
 <body>
@@ -20,18 +22,19 @@
 <font color="red"><%= request.getAttribute("result_password") %></font><br><% } %>
 <% if(request.getAttribute("result_name") != null){ %>
 <font color="red"><%= request.getAttribute("result_name") %></font><br><% } %>
-<% if(request.getAttribute("result_nickname") != null){ %>
-<font color="red"><%= request.getAttribute("result_nickname") %></font><br><% } %>
 <br>
 <form action="/entry" method="post">
-Eメールアドレス<br>
+◆Eメールアドレス<br>
 <input type="text" name="email" value="${email}"/><br>
-パスワード<br>
+◆パスワード<br>
 <input type="password" name="password" value="${password}" /><br>
-氏名<br>
+◆名前<br>
 <input type="text" name="name" value="${name}"/><br>
-ニックネーム<br>
-<input type="text" name="nickname" value="${nickname}" /><br>
+<input type="checkbox" name="emailSend" value="OK"
+<% if(request.getAttribute("emailSend") != null && request.getAttribute("emailSend").toString() == "OK"){ %>
+checked="checked"<% } %>>
+メールでタスク状況を受け取る<br>
+
 <br>
 <input type="hidden" name="status" value="entry">
 <input type="submit" value="会員登録" />

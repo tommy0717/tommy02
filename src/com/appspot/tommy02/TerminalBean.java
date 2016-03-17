@@ -6,6 +6,9 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
@@ -15,9 +18,9 @@ import com.google.appengine.api.datastore.KeyFactory;
 
 public class TerminalBean {
 
-	private String ses_status;
-	private String ses_token;
-	private String cok_token;
+	private String sesStatus;
+	private String sesToken;
+	private String cokToken;
 	private String result;
 
 	public TerminalBean(){
@@ -25,9 +28,9 @@ public class TerminalBean {
 	}
 
 	public TerminalBean(String ses_status,String ses_token,String cok_token){
-		this.ses_status = ses_status;
-		this.ses_token = ses_token;
-		this.cok_token = cok_token;
+		this.sesStatus = ses_status;
+		this.sesToken = ses_token;
+		this.cokToken = cok_token;
 	}
 
 	public String Login(String userid,String password, String first){
@@ -83,7 +86,7 @@ public class TerminalBean {
 	public String Logout(){
 
 		//ログインテーブルから削除
-		Key key = KeyFactory.createKey("LOGIN", ses_token);
+		Key key = KeyFactory.createKey("LOGIN", sesToken);
 		DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
 		try{
 			Entity entity = ds.get(key);
@@ -102,10 +105,10 @@ public class TerminalBean {
 
 	public String LoginCheck(){
 		/* ログイン状態を確認する */
-		if(ses_status == ("login")){
+		if(sesStatus == ("login")){
 			//セッション有
 			//前回ログイン時間チェック（2週間経過でログアウト）
-			if(loginDayCheck(ses_token) == "OK"){
+			if(loginDayCheck(sesToken) == "OK"){
 				result = "OK_ses";
 			}else{
 				result = "NG_ses";
@@ -114,7 +117,7 @@ public class TerminalBean {
 		}else{
 			//セッション無
 			//cookie状態の確認とログイン時間チェック
-			if(loginDayCheck(cok_token) == "OK"){
+			if(loginDayCheck(cokToken) == "OK"){
 				result = "OK_cok";
 			}else{
 				result = "NG_cok";
@@ -126,9 +129,10 @@ public class TerminalBean {
 	private String loginDayCheck(String token){
 		String dayCheck = "NG";
 
-		Key key = KeyFactory.createKey("LOGIN", token);
-		DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
+
 		try{
+			Key key = KeyFactory.createKey("LOGIN", token);
+			DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
 			Entity entity = ds.get(key);
 
 			//ストリングからCalendarに変換
@@ -159,18 +163,52 @@ public class TerminalBean {
 		}catch(EntityNotFoundException e){
 			//ログインNG（対象のログインテーブルが存在しない）
 			dayCheck = "NG";
+		}catch(IllegalArgumentException e){
+			//ログインNG（キーがNULLもしくはブランク）
+			dayCheck = "NG";
 		}
 
 		return dayCheck;
 
 	}
 
-	public String getSes_token() {return ses_token;}
-	public void setSes_token(String ses_token) {this.ses_token = ses_token;}
-	public String getCok_token() {return cok_token;}
-	public void setCok_token(String cok_token) {this.cok_token = cok_token;}
+	public String getUserID(HttpServletRequest req){
+		String userID;
+		HttpSession ss = req.getSession();
+		String token = ss.getAttribute("TOKEN").toString();
+		Key loginKey = KeyFactory.createKey("LOGIN", token);
+		DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
+
+			try {
+				Entity login = ds.get(loginKey);
+				userID = (String)login.getProperty("USER_ID");
+			} catch (EntityNotFoundException e) {
+				userID = "NG";
+			}
+		return userID;
+	}
+
+	public String getUserID(String token){
+		String userID;
+		Key loginKey = KeyFactory.createKey("LOGIN", token);
+		DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
+
+			try {
+				Entity login = ds.get(loginKey);
+				userID = (String)login.getProperty("USER_ID");
+			} catch (EntityNotFoundException e) {
+				userID = "NG";
+			}
+		return userID;
+	}
+
+
+	public String getSesToken() {return sesToken;}
+	public void setSesToken(String ses_token) {this.sesToken = ses_token;}
+	public String getCokToken() {return cokToken;}
+	public void setCokToken(String cok_token) {this.cokToken = cok_token;}
 //	public String getStatus() {return status;}
-	public void setStatus(String status) {this.ses_status = status;}
+	public void setStatus(String status) {this.sesStatus = status;}
 	public String getResult() {return result;}
 //	public void setResult(String result) {this.result = result;}
 

@@ -1,11 +1,13 @@
 package com.appspot.tommy02;
 
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
+import java.util.ConcurrentModificationException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
+import com.google.appengine.api.datastore.DatastoreFailureException;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
@@ -15,169 +17,317 @@ import com.google.appengine.api.datastore.KeyFactory;
 
 public class AccountBean {
 
-	private String ses_status;
-	private String ses_token;
-	private String cok_token;
-	private String result;
+	private String email;
+	private String userName;
+	private String password;
+	private String emailSend;
+	private String refreshToken;
+	private int sendTime = 7;         /* デフォルト設定 */
+	private String accountMemo = "";  /* デフォルト設定 */
+
+	private String chkEmail;
+	private String chkUserName;
+	private String chkPassword;
 
 	public AccountBean(){
-		//コンストラクタ
 	}
 
-	public AccountBean(String ses_status,String ses_token,String cok_token){
-		this.ses_status = ses_status;
-		this.ses_token = ses_token;
-		this.cok_token = cok_token;
+	public AccountBean(String email, String userName, String password, String emailSend){
+		//新規登録時
+		setEmail(email);
+		setUserName(userName);
+		setPassword(password);
+		this.emailSend = emailSend;
 	}
 
-	public String Login(String userid,String password){
+	public AccountBean(String email){
+		setEmail(email);
+	}
 
-		Key key = KeyFactory.createKey("User", userid);
+	public String get(){
+		String result;
 		DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
-		try{
-			Entity entity = ds.get(key);
-			if(password.equals(entity.getProperty("password"))){
+		Key key = KeyFactory.createKey("Account", email);
 
-				/*ログイントークンを生成する */
-				int TOKEN_LENGTH = 16;//16*2=32バイト
-				byte token[] = new byte[TOKEN_LENGTH];
-				StringBuffer buf = new StringBuffer();
-				SecureRandom random = null;
-				try {
-					random = SecureRandom.getInstance("SHA1PRNG");
-					random.nextBytes(token);
-					for (int i = 0; i < token.length; i++) {
-						buf.append(String.format("%02x", token[i]));
-					}
-				}catch(NoSuchAlgorithmException e){
-					/* トークン生成エラー */
-				}
-
-				/* 作成したログイントークンをログインテーブルへ登録する */
-				Calendar nowCalendar = Calendar.getInstance();
-
-			    // 上記、現在日時のフォーマットを指定
-			    SimpleDateFormat formatA = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
-			    String formatDate = formatA.format(nowCalendar.getTime());
-
-				try{
-					Entity Login = new Entity("LOGIN",buf.toString());
-					Login.setProperty("TOKEN", buf.toString());
-					Login.setProperty("USER_ID", userid);
-					Login.setProperty("REGISTRATED_TIME", formatDate);
-					ds.put(Login);
-
-					result = buf.toString();
-
-				}catch(Exception e){
-					/* エラー */
-				}
-
+		try {
+			Entity ac = ds.get(key);
+			this.userName = ac.getProperty("userName").toString();
+			this.password = ac.getProperty("password").toString();
+			this.emailSend = ac.getProperty("emailSend").toString();
+			if(ac.getProperty("refreshToken") != null){
+				this.refreshToken = ac.getProperty("refreshToken").toString();
 			}else{
-				//ログインNG（パスワード違い）
-				result = "NG_password";
+				this.refreshToken = "";
+			}
+			if(ac.getProperty("sendTime") != null){
+				this.sendTime = Integer.parseInt(ac.getProperty("sendTime").toString());
+			}
+			if(ac.getProperty("accountMemo") != null){
+				accountMemo = ac.getProperty("accountMemo").toString();
 			}
 
-		}catch(EntityNotFoundException e){
-			//ログインNG（ID違い）
-			result = "NG_userid";
+			result = "OK";
+		} catch (EntityNotFoundException e) {
+			result = "エンティティ取得エラー";
 		}
 
 		return result;
 	}
 
-	public String Logout(){
+	public String insert(){
+		String result;
 
-		//ログインテーブルから削除
-		Key key = KeyFactory.createKey("LOGIN", ses_token);
+		if(chkEmail == "OK" && chkUserName == "OK" && chkPassword =="OK"){
+
+			/* 登録済チェック */
+			Key key = KeyFactory.createKey("Account", email);
+			DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
+			try{
+				Entity entity = ds.get(key);
+				result = "既に登録されているメールアドレスです。";
+			}catch(EntityNotFoundException e){
+				//処理なし
+
+				Entity ac = new Entity("Account",email);
+				ac.setProperty("email", email);
+				ac.setProperty("userName", userName);
+				ac.setProperty("password", password);
+				ac.setProperty("emailSend", emailSend);
+				ac.setProperty("sendTime", sendTime);
+				ac.setProperty("accountMemo", accountMemo);
+				try{
+					ds.put(ac);
+					result = "OK";
+				}catch(IllegalArgumentException e1){
+					result = "NG";
+				}catch(ConcurrentModificationException e1){
+					result = "NG";
+				}catch(DatastoreFailureException e1){
+					result = "NG";
+				}
+			}
+
+
+		}else{
+			result = "入力値エラー";
+		}
+
+		return result;
+
+	}
+
+	public String update(){
+
+		String result;
+		Key key = KeyFactory.createKey("Account", email);
 		DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
 		try{
 			Entity entity = ds.get(key);
-			ds.delete(entity.getKey()); //ログインテーブルの削除
+
+			if(chkEmail == "OK"){ entity.setProperty("email", email); }
+			if(chkUserName == "OK"){ entity.setProperty("userName", userName); }
+			if(chkPassword == "OK"){ entity.setProperty("password", password); }
+			if(emailSend != null && emailSend != ""){ entity.setProperty("emailSend", emailSend); }
+			if(refreshToken != null && refreshToken != ""){ entity.setProperty("refreshToken", refreshToken); }
+			entity.setProperty("sendTime", sendTime);        /* 過渡期対応中 */
+			entity.setProperty("accountMemo", accountMemo);  /* 過渡期対応中 */
+
+			ds.put(entity);
+			result = "OK";
 
 		}catch(EntityNotFoundException e){
-			//ログインNG（対象のログインテーブルが存在しない）
 			result = "NG";
 		}
 
-		//クッキーから削除（コール元で削除）
-		//セッションから削除（コール元で削除）
-
 		return result;
 	}
 
-	public String LoginCheck(){
-		/* ログイン状態を確認する */
-		if(ses_status == ("login")){
-			//セッション有
-			//前回ログイン時間チェック（2週間経過でログアウト）
-			if(loginDayCheck(ses_token) == "OK"){
-				result = "OK_ses";
+	/**
+	 * emailを取得します。
+	 * @return email
+	 */
+	public String getEmail() {
+	    return email;
+	}
+
+	/**
+	 * emailを設定します。
+	 * @param email email
+	 */
+	public void setEmail(String email) {
+		chkEmail = "OK";
+
+		if(email == null || email == ""){
+			chkEmail = "Eメールアドレスが入力されていません。";
+		}else{
+			/* メールアドレスの正当性チェック */
+			String ptnStr = "[\\w\\.\\-]+@(?:[\\w\\-]+\\.)+[\\w\\-]+";
+			Pattern ptn =Pattern.compile(ptnStr);
+			Matcher mc = ptn.matcher(email);
+			if(mc.matches()){
+				/* 一致（処理なし） */
 			}else{
-				result = "NG_ses";
+				/* 一致しない */
+				chkEmail = "無効なメールアドレスです。";
 			}
 
-		}else{
-			//セッション無
-			//cookie状態の確認とログイン時間チェック
-			if(loginDayCheck(cok_token) == "OK"){
-				result = "OK_cok";
-			}else{
-				result = "NG_cok";
+			if(chkEmail == "OK"){
+				this.email = email;
 			}
 		}
-		return result;
 	}
 
-	private String loginDayCheck(String token){
-		String dayCheck = "NG";
+	/**
+	 * userNameを取得します。
+	 * @return userName
+	 */
+	public String getUserName() {
+	    return userName;
+	}
 
-		Key key = KeyFactory.createKey("LOGIN", token);
+	/**
+	 * userNameを設定します。
+	 * @param userName userName
+	 */
+	public void setUserName(String userName) {
+
+		if(userName == null || userName.length() == 0){
+			chkUserName = "名前が入力されていません。";
+		}else{
+			//名前の妥当性チェック（気が向いたら書く）
+		    this.userName = userName;
+			chkUserName = "OK";
+		}
+	}
+
+	/**
+	 * passwordを取得します。
+	 * @return password
+	 */
+	public String getPassword() {
+	    return password;
+	}
+
+	/**
+	 * passwordを設定します。
+	 * @param password password
+	 */
+	public void setPassword(String password) {
+
+		if(password == null || password == ""){
+			chkPassword = "パスワードが入力されていません。";
+		}else if(password.length() < 8){
+			chkPassword = "パスワードは8文字以上で登録してください。";
+		}else{
+			//名前の妥当性チェック（気が向いたら書く）
+		    this.password = password;
+		    chkPassword = "OK";
+		}
+	}
+
+	/**
+	 * chkEmailを取得します。
+	 * @return chkEmail
+	 */
+	public String chkEmail() {
+	    return chkEmail;
+	}
+
+	/**
+	 * chkUserNameを取得します。
+	 * @return chkUserName
+	 */
+	public String chkUserName() {
+	    return chkUserName;
+	}
+
+	/**
+	 * chkPasswordを取得します。
+	 * @return chkPassword
+	 */
+	public String chkPassword() {
+	    return chkPassword;
+	}
+
+	/**
+	 * emailSendを取得します。
+	 * @return emailSend
+	 */
+	public String getEmailSend() {
+	    return emailSend;
+	}
+
+	/**
+	 * emailSendを設定します。
+	 * @param emailSend emailSend
+	 */
+	public void setEmailSend(String emailSend) {
+	    this.emailSend = emailSend;
+	}
+
+	/**
+	 * refreshTokenを取得します。
+	 * @return refreshToken
+	 */
+	public String getRefreshToken() {
+	    return refreshToken;
+	}
+
+	/**
+	 * refreshTokenを設定します。
+	 * @param refreshToken refreshToken
+	 */
+	public void setRefreshToken(String refreshToken) {
+	    this.refreshToken = refreshToken;
+	}
+
+	public String getUserID(HttpServletRequest req){
+		String userID;
+		HttpSession ss = req.getSession();
+		String token = ss.getAttribute("TOKEN").toString();
+		Key loginKey = KeyFactory.createKey("LOGIN", token);
 		DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
-		try{
-			Entity entity = ds.get(key);
-
-			//ストリングからCalendarに変換
-			SimpleDateFormat dateformat = new SimpleDateFormat("yyyy/MM/dd hh:mm:ss");
-			Date date = null;
 
 			try {
-				date = new Date( dateformat.parse((String) entity.getProperty("REGISTRATED_TIME")).getTime());
-			} catch (java.text.ParseException e) {
-				//エラー処理（後で書くこと）
+				Entity login = ds.get(loginKey);
+				userID = (String)login.getProperty("USER_ID");
+			} catch (EntityNotFoundException e) {
+				userID = "NG";
 			}
 
-			Calendar cal_loginDay = Calendar.getInstance();
-			cal_loginDay.setTime(date);
-
-			//2週間前の日付を取得
-			Calendar cal_before2week = Calendar.getInstance();
-			cal_before2week.add(Calendar.DAY_OF_MONTH,-14);
-
-			//ログインテーブルの日付チェック
-			if(cal_loginDay.compareTo(cal_before2week)>=0){
-				dayCheck = "OK";
-			}else{
-				dayCheck = "NG";
-				ds.delete(entity.getKey()); //ログインテーブルの削除
-			}
-
-		}catch(EntityNotFoundException e){
-			//ログインNG（対象のログインテーブルが存在しない）
-			dayCheck = "NG";
-		}
-
-		return dayCheck;
-
+		return userID;
 	}
 
-	public String getSes_token() {return ses_token;}
-	public void setSes_token(String ses_token) {this.ses_token = ses_token;}
-	public String getCok_token() {return cok_token;}
-	public void setCok_token(String cok_token) {this.cok_token = cok_token;}
-//	public String getStatus() {return status;}
-	public void setStatus(String status) {this.ses_status = status;}
-	public String getResult() {return result;}
-//	public void setResult(String result) {this.result = result;}
+	/**
+	 * sendTimeを取得します。
+	 * @return sendTime
+	 */
+	public int getSendTime() {
+	    return sendTime;
+	}
+
+	/**
+	 * sendTimeを設定します。
+	 * @param sendTime sendTime
+	 */
+	public void setSendTime(int sendTime) {
+	    this.sendTime = sendTime;
+	}
+
+	/**
+	 * accountMemoを取得します。
+	 * @return accountMemo
+	 */
+	public String getAccountMemo() {
+	    return accountMemo;
+	}
+
+	/**
+	 * accountMemoを設定します。
+	 * @param accountMemo accountMemo
+	 */
+	public void setAccountMemo(String accountMemo) {
+	    this.accountMemo = accountMemo;
+	}
 
 }

@@ -1,16 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <cronentries>
-  <cron>
-    <url>/cron1</url>
-    <description>cron1 the run every 12 hours</description>
-    <schedule>every 12 hours</schedule>
-    <timezone>Asia/Tokyo</timezone>
-  </cron>
 
-  <cron>
-		<url>/_ah/sessioncleanup?clear</url>
-		<description>Clean up sessions</description>
-		<schedule>every 12 hours</schedule>
-	</cron>
+<cron>
+	<url>/_ah/sessioncleanup?clear</url>
+	<description>Clean up sessions</description>
+	<schedule>every 12 hours</schedule>
+</cron>
+
+<cron>
+	<url>/cronTaskResultDelete</url>
+	<description>cronTaskResultDelete the run every 1 hours</description>
+	<schedule>every 1 hours</schedule>
+	<timezone>Asia/Tokyo</timezone>
+</cron>
+
+<cron>
+	<url>/cronMessageSender</url>
+	<description>cronMessageSender the run every 1 hours</description>
+	<schedule>every 1 hours from 00:00 to 23:59</schedule>
+	<timezone>Asia/Tokyo</timezone>
+</cron>
+
+<cron>
+	<url>/cronTaskWorkDaysAdd</url>
+	<description>cronTaskWorkDaysAdd the run every day 00:00</description>
+	<schedule>every day 00:00</schedule>
+	<timezone>Asia/Tokyo</timezone>
+</cron>
 
 </cronentries>

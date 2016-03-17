@@ -7,6 +7,8 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="initial-scale=1.0">
+<link rel="stylesheet" type="text/css" href="tommy02.css?var=20160214"/>
 <title>ログイン</title>
 </head>
 <body>
@@ -17,7 +19,7 @@
 <% if(request.getAttribute("err_msg") != null){ %>
 <%= request.getAttribute("err_msg") %><br><%} %>
 <br>
-<form action="/mypage" method="post">
+<form action="/login" method="post">
 Eメールアドレス<br>
 <input type="text" name="email" value="${email}"/><br>
 パスワード<br>
