@@ -1,6 +1,8 @@
 package com.appspot.tommy02;
 
 import java.io.IOException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -15,33 +17,14 @@ public class TestServlet extends HttpServlet {
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp)
 	throws ServletException, IOException {
 
-		StringBuilder test = new StringBuilder();
+		String year = "12/20";
+		Pattern p = Pattern.compile("[1-12]/[1-31]");
+		Matcher m = p.matcher(year);
 
-		String strYear = "2016";
-		String strMonth = "10";
-		String strDay = "11";
+		req.setAttribute("test1", year);
+		req.setAttribute("test2", p);
+		req.setAttribute("test3", m.find());
 
-		if(Integer.parseInt(strMonth) < 10){ strMonth = "0" + strMonth; }
-		if(Integer.parseInt(strDay) < 10){ strDay = "0" + strDay; }
-
-		String strDate = strYear + strMonth + strDay;
-		int intDate = Integer.parseInt(strDate);
-
-		strDate = Integer.toString(intDate);
-
-		strYear = strDate.substring(0, 4);
-		strMonth = strDate.substring(4, 6);
-		strDay= strDate.substring(6, 8);
-
-		test.append(strDate);
-		test.append("<br>");
-		test.append(strYear);
-		test.append("<br>");
-		test.append(strMonth);
-		test.append("<br>");
-		test.append(strDay);
-
-		req.setAttribute("test", test.toString());
 		RequestDispatcher rd = getServletContext().getRequestDispatcher("/WEB-INF/test.jsp");
 		rd.forward(req, resp);
 
