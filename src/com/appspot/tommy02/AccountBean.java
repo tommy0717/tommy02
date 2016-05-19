@@ -1,9 +1,16 @@
 package com.appspot.tommy02;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ConcurrentModificationException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.crypto.Cipher;
+import javax.crypto.spec.SecretKeySpec;
+import javax.mail.internet.MimeUtility;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
@@ -17,6 +24,8 @@ import com.google.appengine.api.datastore.KeyFactory;
 
 public class AccountBean {
 
+	private final String passKey = "tommy02";
+
 	private String email;
 	private String userName;
 	private String password;
@@ -24,10 +33,18 @@ public class AccountBean {
 	private String refreshToken;
 	private int sendTime = 7;         /* デフォルト設定 */
 	private String accountMemo = "";  /* デフォルト設定 */
+	private String calSummary1 = "-";
+	private String calSummary2 = "-";
+	private String calSummary3 = "-";
 
-	private String chkEmail;
-	private String chkUserName;
-	private String chkPassword;
+	private String chkEmail = "";
+	private String chkUserName = "";
+	private String chkPassword = "";
+	private String chkSendTime = "";
+	private String chkAccountMemo = "";
+	private String chkCalSummary1 = "";
+	private String chkCalSummary2 = "";
+	private String chkCalSummary3 = "";
 
 	public AccountBean(){
 	}
@@ -52,7 +69,11 @@ public class AccountBean {
 		try {
 			Entity ac = ds.get(key);
 			this.userName = ac.getProperty("userName").toString();
-			this.password = ac.getProperty("password").toString();
+//			this.password = ac.getProperty("password").toString();
+
+			byte[] by = decodeBase64(ac.getProperty("password").toString());
+			this.password = decrypt(by);
+
 			this.emailSend = ac.getProperty("emailSend").toString();
 			if(ac.getProperty("refreshToken") != null){
 				this.refreshToken = ac.getProperty("refreshToken").toString();
@@ -65,9 +86,18 @@ public class AccountBean {
 			if(ac.getProperty("accountMemo") != null){
 				accountMemo = ac.getProperty("accountMemo").toString();
 			}
+			if(ac.getProperty("calSummary1") != null){
+				calSummary1 = ac.getProperty("calSummary1").toString();
+			}
+			if(ac.getProperty("calSummary2") != null){
+				calSummary2 = ac.getProperty("calSummary2").toString();
+			}
+			if(ac.getProperty("calSummary3") != null){
+				calSummary3 = ac.getProperty("calSummary3").toString();
+			}
 
 			result = "OK";
-		} catch (EntityNotFoundException e) {
+		} catch (Exception e) {
 			result = "エンティティ取得エラー";
 		}
 
@@ -91,7 +121,17 @@ public class AccountBean {
 				Entity ac = new Entity("Account",email);
 				ac.setProperty("email", email);
 				ac.setProperty("userName", userName);
-				ac.setProperty("password", password);
+
+				try {
+					byte[] by = encrypt(password);
+					ac.setProperty("password", encodeBase64(by));
+
+				} catch (Exception e2) {
+					// TODO 自動生成された catch ブロック
+					e2.printStackTrace();
+				}
+
+//				ac.setProperty("password", password);
 				ac.setProperty("emailSend", emailSend);
 				ac.setProperty("sendTime", sendTime);
 				ac.setProperty("accountMemo", accountMemo);
@@ -106,7 +146,6 @@ public class AccountBean {
 					result = "NG";
 				}
 			}
-
 
 		}else{
 			result = "入力値エラー";
@@ -126,11 +165,22 @@ public class AccountBean {
 
 			if(chkEmail == "OK"){ entity.setProperty("email", email); }
 			if(chkUserName == "OK"){ entity.setProperty("userName", userName); }
-			if(chkPassword == "OK"){ entity.setProperty("password", password); }
+			if(chkPassword == "OK"){
+				try {
+					byte[] by = encrypt(password);
+					entity.setProperty("password", encodeBase64(by));
+				} catch (Exception e2) {
+					// TODO 自動生成された catch ブロック
+					e2.printStackTrace();
+				}
+			}
 			if(emailSend != null && emailSend != ""){ entity.setProperty("emailSend", emailSend); }
 			if(refreshToken != null && refreshToken != ""){ entity.setProperty("refreshToken", refreshToken); }
-			entity.setProperty("sendTime", sendTime);        /* 過渡期対応中 */
-			entity.setProperty("accountMemo", accountMemo);  /* 過渡期対応中 */
+			if(this.chkSendTime.equals("OK")){ entity.setProperty("sendTime", sendTime); }
+			if(this.chkAccountMemo.equals("OK")){entity.setProperty("accountMemo", accountMemo); }
+			if(this.chkCalSummary1.equals("OK")){entity.setProperty("calSummary1", calSummary1); }
+			if(this.chkCalSummary2.equals("OK")){entity.setProperty("calSummary2", calSummary2); }
+			if(this.chkCalSummary3.equals("OK")){entity.setProperty("calSummary3", calSummary3); }
 
 			ds.put(entity);
 			result = "OK";
@@ -312,6 +362,7 @@ public class AccountBean {
 	 */
 	public void setSendTime(int sendTime) {
 	    this.sendTime = sendTime;
+	    this.chkSendTime = "OK";
 	}
 
 	/**
@@ -328,6 +379,108 @@ public class AccountBean {
 	 */
 	public void setAccountMemo(String accountMemo) {
 	    this.accountMemo = accountMemo;
+	    this.chkAccountMemo = "OK";
 	}
+
+	/**
+	 * calSummary1を取得します。
+	 * @return calSummary1
+	 */
+	public String getCalSummary1() {
+	    return calSummary1;
+	}
+
+	/**
+	 * calSummary1を設定します。
+	 * @param calSummary1 calSummary1
+	 */
+	public void setCalSummary1(String calSummary1) {
+	    this.calSummary1 = calSummary1;
+	    this.chkCalSummary1 = "OK";
+	}
+
+	/**
+	 * calSummary2を取得します。
+	 * @return calSummary2
+	 */
+	public String getCalSummary2() {
+	    return calSummary2;
+	}
+
+	/**
+	 * calSummary2を設定します。
+	 * @param calSummary2 calSummary2
+	 */
+	public void setCalSummary2(String calSummary2) {
+	    this.calSummary2 = calSummary2;
+	    this.chkCalSummary2 = "OK";
+	}
+
+	/**
+	 * calSummary3を取得します。
+	 * @return calSummary3
+	 */
+	public String getCalSummary3() {
+	    return calSummary3;
+	}
+
+	/**
+	 * calSummary3を設定します。
+	 * @param calSummary3 calSummary3
+	 */
+	public void setCalSummary3(String calSummary3) {
+	    this.calSummary3 = calSummary3;
+	    this.chkCalSummary3 = "OK";
+	}
+
+	public byte[] encrypt(String text)
+		    throws Exception {
+
+		    SecretKeySpec sksSpec =
+		        new SecretKeySpec(passKey.getBytes(), "Blowfish");
+
+		    Cipher cipher = Cipher.getInstance("Blowfish");
+		    cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, sksSpec);
+
+		    return cipher.doFinal(text.getBytes());
+		}
+
+	public String decrypt(byte[] encrypted)
+		    throws Exception {
+
+		    SecretKeySpec sksSpec =
+		        new SecretKeySpec(passKey.getBytes(), "Blowfish");
+
+		    Cipher cipher = Cipher.getInstance("Blowfish");
+		    cipher.init(Cipher.DECRYPT_MODE, sksSpec);
+
+		    return new String(cipher.doFinal(encrypted));
+		}
+
+	public String encodeBase64(byte[] data) throws Exception {
+
+	    ByteArrayOutputStream forEncode = new ByteArrayOutputStream();
+
+	    OutputStream toBase64 = MimeUtility.encode(forEncode, "base64");
+	    toBase64.write(data);
+	    toBase64.close();
+
+	    return forEncode.toString("iso-8859-1");
+	}
+
+	public byte[] decodeBase64(String base64) throws Exception {
+
+	    InputStream fromBase64 = MimeUtility.decode(
+	        new ByteArrayInputStream(base64.getBytes()), "base64");
+
+	    byte[] buf = new byte[1024];
+	    ByteArrayOutputStream toByteArray = new ByteArrayOutputStream();
+
+	    for (int len = -1;(len = fromBase64.read(buf)) != -1;)
+	        toByteArray.write(buf, 0, len);
+
+	    return toByteArray.toByteArray();
+	}
+
 
 }
