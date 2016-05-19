@@ -228,10 +228,12 @@ private void taskAddForward(String menu, HttpServletRequest req, HttpServletResp
 
 		String taskTotal = req.getParameter("taskTotal");
 
+		String taskSubTypeDetail = ""; /* 後で見直し */
+
 		TaskBean task = new TaskBean(taskName, taskContent, taskType,
 				taskSubType,taskPriority, taskStartYear, taskStartMonth, taskStartDay,
 				taskEndYear, taskEndMonth, taskEndDay, taskHours, taskMinutes,
-				getUserID(req),taskTotal);
+				getUserID(req),taskTotal, taskSubTypeDetail);
 
 		//タスクを登録する。
 		if(task.insert() == "OK"){

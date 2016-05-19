@@ -4,6 +4,7 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -18,6 +19,8 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
+import com.google.appengine.api.datastore.Query.CompositeFilter;
+import com.google.appengine.api.datastore.Query.CompositeFilterOperator;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 
 
@@ -308,8 +311,11 @@ public class TaskResultBean {
 		Query query = new Query("taskResult");
 
 		// QueryクラスのaddFilterメソッドを用いて条件を指定
-		query.setFilter(new Query.FilterPredicate("userID", FilterOperator.EQUAL, userID));
-		query.setFilter(new Query.FilterPredicate("workDate", FilterOperator.EQUAL, format.format(now)));
+		CompositeFilter cf = new Query.CompositeFilter(CompositeFilterOperator.AND, Arrays.<Query.Filter>asList(
+				new Query.FilterPredicate("userID", FilterOperator.EQUAL, userID),
+				new Query.FilterPredicate("workDate", FilterOperator.EQUAL, format.format(now))));
+
+		query.setFilter(cf);
 //		query.addSort("taskStart",Query.SortDirection.ASCENDING);
 
 		// 作成したクエリからPrepareQueryクラスのオブジェクトを生成

@@ -1,6 +1,7 @@
 package com.appspot.tommy02;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -14,6 +15,8 @@ import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
+import com.google.appengine.api.datastore.Query.CompositeFilter;
+import com.google.appengine.api.datastore.Query.CompositeFilterOperator;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 
 public class TaskListPageFactory {
@@ -106,7 +109,11 @@ public class TaskListPageFactory {
 
 	    }else{
 	    	float max = 100;
-	    	query.setFilter(new Query.FilterPredicate("taskPercentage", FilterOperator.LESS_THAN, max));
+			CompositeFilter cf = new Query.CompositeFilter(CompositeFilterOperator.AND,Arrays.<Query.Filter>asList(
+					new Query.FilterPredicate("userID", FilterOperator.EQUAL, userID),
+					new Query.FilterPredicate("taskPercentage", FilterOperator.LESS_THAN, max)));
+
+	    	query.setFilter(cf);
 	    }
 
 	    // 作成したクエリからPrepareQueryクラスのオブジェクトを生成

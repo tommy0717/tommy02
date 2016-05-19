@@ -37,7 +37,6 @@ public class CronMessageSender extends HttpServlet {
 
 			Entity ac;
 		    Queue queue = QueueFactory.getDefaultQueue();
-//	        queue.add(TaskOptions.Builder.withUrl("/queueMail"));
 
 			for(int j = 0; j < acList.size(); j++){
 				ac = (Entity)acList.get(j);
@@ -46,9 +45,6 @@ public class CronMessageSender extends HttpServlet {
 				TimeZone tz = TimeZone.getTimeZone("Asia/Tokyo");
 				Calendar cal = Calendar.getInstance(tz);
 				int now = cal.get(Calendar.HOUR_OF_DAY);
-				if(cal.get(Calendar.AM_PM) == 1){
-					now = now + 12;
-				}
 
 				int sendTime = 7;
 				if(ac.getProperty("sendTime") != null){
@@ -61,7 +57,6 @@ public class CronMessageSender extends HttpServlet {
 
 				if(ac.getProperty("emailSend").toString().equals("OK") && sendTime == now){
 			        //詳細を指定してPost
-//			        queue = QueueFactory.getQueue("process");
 			        TaskOptions to = TaskOptions.Builder.withUrl("/queueMail")
 			        					.param("email", ac.getProperty("email").toString());
 			        queue.add(to.method(Method.POST));

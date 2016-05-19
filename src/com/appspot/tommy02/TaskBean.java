@@ -8,6 +8,8 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.google.appengine.api.datastore.DatastoreFailureException;
 import com.google.appengine.api.datastore.DatastoreService;
@@ -30,6 +32,7 @@ public class TaskBean {
 	private String taskContent;
 	private String taskType;
 	private String taskSubType;
+	private String taskSubTypeDetail;
 	private String taskPriority;
 	private String taskStart;
 	private String taskEnd;
@@ -76,12 +79,12 @@ public class TaskBean {
 				String taskStartYear, String taskStartMonth, String taskStartDay,
 				String taskEndYear, String taskEndMonth, String taskEndDay,
 				String taskHours, String taskMinutes, String userID,
-				String taskTotal){
+				String taskTotal, String taskSubTypeDetail){
 		//コンストラクタ(新規登録時）
 		setUserID(userID);
 		setTaskName(taskName);
 		setTaskContent(taskContent);
-		setTaskType(taskType,taskSubType);
+		setTaskType(taskType,taskSubType,taskSubTypeDetail);
 		setTaskPriority(taskPriority);
 		setTaskStart(taskStartYear, taskStartMonth, taskStartDay);
 		setTaskEnd(taskEndYear, taskEndMonth, taskEndDay);
@@ -119,6 +122,7 @@ public class TaskBean {
 			TASK.setProperty("taskContent", taskContent);
 			TASK.setProperty("taskType", taskType);
 			TASK.setProperty("taskSubType", taskSubType);
+			TASK.setProperty("taskSubTypeDetail", taskSubTypeDetail);
 			TASK.setProperty("taskPriority", taskPriority);
 			TASK.setProperty("taskStart", taskStart);
 			TASK.setProperty("taskEnd", taskEnd);
@@ -132,6 +136,18 @@ public class TaskBean {
 			ds.put(TASK);
 
 			taskWorkDaysAdd(TASK.getKey());
+
+			if(taskType.equals("routine")){
+				//タスクの自動登録を行う。
+				//年次の場合は翌年まで
+				//月次の場合は3か月先まで
+				//週次の場合は一か月先まで
+				//日次の場合は2週間先まで
+
+
+
+
+			}
 
 			resultInsert = "OK";
 
@@ -231,19 +247,19 @@ public class TaskBean {
 			taskSubType = task.getProperty("taskSubType").toString();
 			taskPriority = task.getProperty("taskPriority").toString();
 			taskStart = task.getProperty("taskStart").toString();
-			
+
 			String[] start = taskStart.split("/");
 			taskStartYear = Integer.parseInt(start[0]);
 			taskStartMonth = Integer.parseInt(start[1]);
 			taskStartDay = Integer.parseInt(start[2]);
-			
+
 			taskEnd = task.getProperty("taskEnd").toString();
-			
+
 			String[] end = taskEnd.split("/");
 			taskEndYear = Integer.parseInt(end[0]);
 			taskEndMonth = Integer.parseInt(end[1]);
 			taskEndDay = Integer.parseInt(end[2]);
-			
+
 			taskMinutes = Integer.parseInt(task.getProperty("taskMinutes").toString());
 			taskTotal = Integer.parseInt(task.getProperty("taskTotal").toString());
 			taskWorkMinutes = Integer.parseInt(task.getProperty("taskWorkMinutes").toString());
@@ -361,22 +377,80 @@ public class TaskBean {
 	 * taskTypeを設定します。
 	 * @param taskType taskType
 	 */
-	public void setTaskType(String taskType, String taskSubType) {
+	public void setTaskType(String taskType, String taskSubType, String taskSubTypeDetail) {
 		if(taskType == null || taskType == ""){
 			chkTaskType = "種別が入力されていません。";
+
 		}else if(taskType.equals("routine")){
-			if(taskSubType.equals("year") ||
-				taskSubType.equals("month") ||
-				taskSubType.equals("day")){
-				this.taskType = taskType;
-				this.taskSubType = taskSubType;
-				chkTaskType = "OK";
-			}else{
-				chkTaskType = "周期に誤りがあります。　" + taskSubType;
+
+			if(taskSubType != null && taskSubTypeDetail != null){
+				Matcher m = null;
+
+				switch(taskSubType){
+				case "year":
+					Pattern p1 = Pattern.compile("[1-12]/[1-31]"); /* MM/DD */
+					m = p1.matcher(taskSubTypeDetail);
+					if(m.find()){
+						//OK
+						this.taskType = taskType;
+						this.taskSubType = taskSubType;
+						this.taskSubTypeDetail = taskSubTypeDetail;
+						chkTaskType = "OK";
+					}else{
+						//NG
+						chkTaskType = "周期の入力に誤りがあります。";
+					}
+					break;
+
+				case "month":
+					Pattern p2 = Pattern.compile("[1-31]"); /* DD */
+					m = p2.matcher(taskSubTypeDetail);
+					if(m.find()){
+						//OK
+						this.taskType = taskType;
+						this.taskSubType = taskSubType;
+						this.taskSubTypeDetail = taskSubTypeDetail;
+						chkTaskType = "OK";
+					}else{
+						//NG
+						chkTaskType = "周期の入力に誤りがあります。";
+					}
+					break;
+
+				case "week":
+					Pattern p3 = Pattern.compile("SUN|MON|TUE|WED|THU|FRI|SAT"); /* 曜日（略） */
+					m = p3.matcher(taskSubTypeDetail);
+					if(m.find()){
+						//OK
+						this.taskType = taskType;
+						this.taskSubType = taskSubType;
+						this.taskSubTypeDetail = taskSubTypeDetail;
+						chkTaskType = "OK";
+					}else{
+						//NG
+						chkTaskType = "周期の入力に誤りがあります。";
+					}
+					break;
+
+				case "day":
+					this.taskType = taskType;
+					this.taskSubType = taskSubType;
+					this.taskSubTypeDetail = "";
+					chkTaskType = "OK";
+
+					break;
+
+				default:
+					chkTaskType ="周期の入力に誤りがあります。";
+
+				}
+
 			}
+
 		}else{
 			this.taskType = taskType;
-			this.taskSubType = taskSubType;
+			this.taskSubType = "";
+			this.taskSubTypeDetail = "";
 			chkTaskType = "OK";
 		}
 	}
